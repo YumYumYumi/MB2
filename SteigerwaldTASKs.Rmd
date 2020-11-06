@@ -1,0 +1,144 @@
+---
+title: "SteigerwaldTASKs"
+author: "Hyeonmin Kang"
+date: "Nov. 6. 2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(RCurl)
+library(dplyr)
+library(ggplot2)
+df <- read.csv("https://raw.githubusercontent.com/wegmann/R_data/master/Steigerwald_sample_points_all_data_subset_withNames.csv")
+df <- df[ , -1]
+```
+
+### ***Task 1***
+**<span style="color:SlateGrey"> plot SRTM values above a predefined NDVI value</span>**
+
+```{r , out.width="70%", echo=FALSE}
+theme_set(
+  theme_minimal() +
+    theme(legend.position = "right")
+  )
+
+ggplot(df, aes(x=SRTM, y=TimeScan.NDVIavg, color=LCname)) +
+  scale_color_manual(values=c("#CC79A7","#D55E00", "green", "#52854C", "black", "red", "#0072B2", "#56B4E9")) +
+  geom_point() + stat_ellipse()
+
+ggplot(df, aes(x=SRTM, y=L8.ndvi, color=LCname)) +
+  scale_color_manual(values=c("#CC79A7","#D55E00", "green", "#52854C", "black", "red", "#0072B2", "#56B4E9")) +
+  geom_point() + stat_ellipse()
+
+ggplot(df, aes(x=SRTM, y=L7.ndvi, color=LCname)) +
+  scale_color_manual(values=c("#CC79A7","#D55E00", "green", "#52854C", "black", "red", "#0072B2", "#56B4E9")) +
+  geom_point() + stat_ellipse()
+
+ggplot(df, aes(x=SRTM, y=MOD.ndvi, color=LCname)) +
+  scale_color_manual(values=c("#CC79A7","#D55E00", "green", "#52854C", "black", "red", "#0072B2", "#56B4E9")) +
+  geom_point() + stat_ellipse()
+
+```
+
+### ***Task 2***
+**<span style="color:SlateGrey"> plot NDVI values for SRTM values less than Y and landcover equal to X</span>**
+
+```{r, out.width="50%", echo=TRUE }
+df %>% 
+  filter(SRTM < 450 & LCname == "broadleaf_woodland") %>%
+  ggplot(aes(SRTM, L8.ndvi)) + geom_point(color = "#CC79A7") 
+
+df %>% 
+  filter(SRTM < 420 & LCname == "conferious_woodland") %>%
+  ggplot(aes(SRTM, L8.ndvi)) + geom_point(color = "#D55E00") 
+
+df %>% 
+  filter(SRTM < 400 & LCname == "water") %>%
+  ggplot(aes(SRTM, L8.ndvi)) + geom_point(color = "#0072B2") 
+
+df %>% 
+  filter(SRTM < 500 & LCname == "wetland") %>%
+  ggplot(aes(SRTM, L8.ndvi)) + geom_point(color = "#56B4E9") 
+```
+
+```{r, echo=TRUE, fig.show='hide'}
+# alternative 
+df_t1 <- df[which(df$SRTM < 450 & df$LCname == "broadleaf_woodland"),]
+ggplot(df_t1, aes(SRTM, L8.ndvi)) + geom_point(color = "#CC79A7") 
+df_t1 <- df[which(df$SRTM < 420 & df$LCname == "conferious_woodland"),]
+ggplot(df_t1, aes(SRTM, L8.ndvi)) + geom_point(color = "#D55E00") 
+df_t1 <- df[which(df$SRTM < 400 & df$LCname == "water"),]
+ggplot(df_t1, aes(SRTM, L8.ndvi)) + geom_point(color = "#0072B2") 
+df_t1 <- df[which(df$SRTM < 500 & df$LCname == "wetland"),]
+ggplot(df_t1, aes(SRTM, L8.ndvi)) + geom_point(color = "#56B4E9") 
+```
+
+### ***Task 3***
+**<span style="color:SlateGrey"> create a new data frame with all entries but only corresponding NDVI values above 0.5</span>**
+```{r, echo=TRUE}
+# 1. possibility
+df_L7ndvi_above_05 <- df %>% 
+  filter(L7.ndvi > 0.5) 
+
+df_L8ndvi_above_05 <-  df %>% 
+  filter(L8.ndvi > 0.5) 
+
+df_tsndvi_above_05 <- df %>% 
+  filter(TimeScan.NDVIavg > 0.5) 
+
+df_MOD_above_05 <-  df %>% 
+  filter(MOD.ndvi > 0.5) 
+
+# 2. possibility
+df_L7ndvi_above_05 <- df[which(df$L7.ndvi > 0.5), ]
+df_L8ndvi_above_05 <- df[which(df$L8.ndvi > 0.5), ]
+df_tsndvi_above_05 <- df[which(df$TimeScan.NDVIavg > 0.5), ]
+df_MOD_above_05 <- df[which(df$MOD.ndvi > 0.5), ]
+
+#3. possiblity 
+df_L7ndvi_above_05 <- subset(df, L7.ndvi > 0.5) 
+df_L8ndvi_above_05 <- subset(df, L8.ndvi > 0.5)
+df_tsndvi_above_05 <- subset(df, TimeScan.NDVIavg > 0.5)
+df_MOD_above_05 <- subset(df, MOD.ndvi > 0.5)
+```
+
+### ***Task 4***
+**<span style="color:SlateGrey"> select data where LC values below x or above y</span>**
+```{r, echo=TRUE}
+# 1. possibility
+df_Lucas_3_6 <- df %>% 
+  filter(LUCAS_LC < 6 & LUCAS_LC > 3) 
+
+# 2. possibility
+df_Lucas_3_6 <- df[which(df$LUCAS_LC < 6 & df$LUCAS_LC > 3), ]
+
+#3. possiblity 
+df_Lucas_3_6 <- subset(df, LUCAS_LC < 6 & LUCAS_LC > 3) 
+
+
+
+```
+
+### ***Task 5***
+**<span style="color:SlateGrey">just select LUCAS LC and SRTM where NDVI larger equal than x</span>**
+```{r, echo=TRUE}
+# 1. possibility
+df2 <- df %>% 
+  filter(L7.ndvi == 0.3 | L7.ndvi > 0.3) %>% 
+  select(LUCAS_LC, SRTM) 
+
+# 2. possibility
+df2 <- subset(df, L7.ndvi > 0.3 | L7.ndvi == 0.3 )
+df2 <- df2[ ,c(2,13)]
+
+#3. possiblity 
+df2 <- df[df$L7.ndvi == 0.3 | df$L7.ndvi > 0.3, ]
+df2 <- df2[ ,c(2,13)]
+
+
+
+```
