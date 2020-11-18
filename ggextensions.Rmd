@@ -1,0 +1,149 @@
+---
+title: "ggextensions"
+author: "Hyeonmin Kang"
+date: "11/17/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(RCurl)
+df <- read.csv("https://raw.githubusercontent.com/wegmann/R_data/master/Steigerwald_sample_points_all_data_subset_withNames.csv")
+df <- df[ , -1]
+avg <- aggregate(df[, c(26,33,38)], list(df$LCname), mean)
+row.names(avg) <- avg[,1]
+avg <- avg[ ,-1]
+set.seed(42)
+library(raster)
+library(sf)
+library(dplyr)
+library(plyr)
+library(ggplot2)
+library(rgeos)
+library(maptools)
+library(scales)
+library(ggdark)
+```
+
+## ***ggrepel 1***
+
+
+```{r , echo=T, message= F, warning=FALSE}
+
+library(ggrepel)
+
+ggplot(avg) +
+  geom_point(aes(L8.ndvi, L7.ndvi), color = 'red') +
+  geom_text(aes(L8.ndvi, L7.ndvi, label = rownames(avg))) +
+  theme_classic(base_size = 16) 
+ggplot(avg) +
+  geom_point(aes(L8.ndvi, L7.ndvi), color = 'red') +
+  geom_text_repel(aes(L8.ndvi, L7.ndvi, label = rownames(avg))) +
+  theme_classic(base_size = 16) 
+
+ggplot(avg) +
+  geom_point(aes(L8.ndvi, L7.ndvi), color = 'red') +
+  geom_label_repel(aes(L8.ndvi, L7.ndvi, label = rownames(avg)),
+                     fontface = 'bold', color = 'DarkSlateGray',
+                     box.padding = unit(0.25, "lines"),
+                     point.padding = unit(0.4, "lines"),
+                     segment.color = 'grey4') +
+  theme_classic(base_size = 16)
+```
+
+## ***ggrepel 2***
+
+
+```{r , echo= T, message= F, warning=FALSE}
+ger <- getData('GADM', country='DEU', level=1)
+ger <- fortify(ger, region ="NAME_1")
+
+ger_ne_comp <- read_sf("ne_10m_populated_places.shp")
+detach("package:plyr", unload = TRUE)
+ger_ne_pipe <- ger_ne_comp %>% 
+  filter(SOV0NAME == "Germany") %>%  
+  group_by(ADM1NAME) %>% 
+  summarize(Sum = sum(POP_MAX))
+
+library(plyr)
+distanceCenter <- ddply(ger, .(id), summarize, latCenter = mean(lat), longCenter = mean(long))
+
+ggplot() + 
+  geom_map(data=ger_ne_pipe, aes(map_id = ADM1NAME, fill = Sum), map = ger) + 
+  expand_limits(x = ger$long, y = ger$lat)+ 
+  scale_fill_gradient2(low = "white",  
+                       mid = "PaleGreen2", 
+                       midpoint = mean(ger_ne_pipe$Sum), 
+                       high = muted("PaleGreen4"), 
+                       limits = c(min(ger_ne_pipe$Sum)-3, 
+                                  max(ger_ne_pipe$Sum)+3))+
+  geom_text(data = distanceCenter, 
+                  aes(x = longCenter, y = latCenter, label = id, size = 0.2)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  ggtitle("Population of cities in german states") 
+
+ggrepel_sp <- ggplot() + 
+  geom_map(data=ger_ne_pipe, aes(map_id = ADM1NAME, fill = Sum), map = ger) + 
+  expand_limits(x = ger$long, y = ger$lat)+ 
+  scale_fill_gradient2(low = "white",  
+                       mid = "PaleGreen2", 
+                       midpoint = mean(ger_ne_pipe$Sum), 
+                       high = muted("PaleGreen4"), 
+                       limits = c(min(ger_ne_pipe$Sum)-3, 
+                                  max(ger_ne_pipe$Sum)+3))+
+  geom_text_repel(data = distanceCenter, 
+                  aes(x = longCenter, y = latCenter, label = id, size = 0.2)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  ggtitle("Population of cities in german states") 
+  
+ggrepel_sp 
+  
+```
+
+## ***ggdark***
+
+```{r , echo= T, message= F, warning=FALSE}
+library(ggdark)
+ggrepel_sp + dark_theme_gray() 
+ggrepel_sp  +  dark_theme_bw(base_family = "Fira Sans Condensed Light", base_size = 14)+
+  theme(plot.title = element_text(family = "Fira Sans Condensed"),
+        plot.background = element_rect(fill = "grey10"),
+        panel.background = element_blank(),
+        panel.grid.major = element_line(color = "grey30", size = 0.2),
+        panel.grid.minor = element_line(color = "grey30", size = 0.2),
+        legend.background = element_blank(),
+        axis.ticks = element_blank(),
+        legend.key = element_blank())
+```
+
+## ***ggradar***
+
+```{r , echo= T, message= F, warning=FALSE}
+library(ggradar)
+avg1 <- aggregate(df[, c(26,33,38)], list(df$LCname), mean)
+
+avg_radar <- avg %>% 
+  as_tibble(rownames = "group") %>% 
+  mutate_at(vars(-group), rescale)
+ggradar(avg_radar)+ dark_theme_gray() 
+```
+
+## ***ggridges & ggpubr***
+
+```{r , echo= T, message= F, warning=FALSE}
+library(ggridges)
+rid1 <- ggplot(df, aes(x = L8.ndvi, y =LCname)) + geom_density_ridges2()
+rid1
+rid2 <- ggplot(df, aes(x = L8.ndvi, y =LCname, fill = stat(x))) +   
+  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
+  scale_fill_viridis_c(name = "NDVI", option = "D")
+rid2 
+
+library(ggpubr)
+ggarrange(rid1,rid2, nrow = 2)
+```
